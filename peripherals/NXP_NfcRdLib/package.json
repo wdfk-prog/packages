@@ -1,0 +1,39 @@
+{
+  "name": "NXP_NfcRdLib",
+  "description": "Independent RT-Thread port of NXP NFC Reader Library with OSAL/BAL/DAL, MSH, LPCD and MIFARE Classic read-only example.",
+  "description_zh": "基于 NXP NFC Reader Library 的独立 RT-Thread 移植，包含 OSAL/BAL/DAL、MSH、LPCD 和 MIFARE Classic 只读示例。",
+  "enable": "PKG_USING_NXP_NFC",
+  "keywords": [
+    "nxp",
+    "nfc",
+    "rfid",
+    "clrc663",
+    "rc663",
+    "rt-thread",
+    "spi"
+  ],
+  "category": "peripherals",
+  "author": {
+    "name": "wdfk-prog",
+    "github": "wdfk-prog"
+  },
+  "license": "NXP Software License Agreement (source redistribution permission must be verified)",
+  "repository": "https://github.com/wdfk-prog/NXP_NfcRdLib",
+  "icon": "unknown",
+  "homepage": "https://github.com/wdfk-prog/NXP_NfcRdLib#readme",
+  "doc": "https://github.com/wdfk-prog/NXP_NfcRdLib/blob/rtt/README.md",
+  "readme": "Independent RT-Thread port based on NxpNfcRdLib. Source redistribution subject to NXP license.",
+  "site": [
+    {
+      "version": "v07.18.00",
+      "URL": "https://github.com/wdfk-prog/NXP_NfcRdLib/archive/refs/tags/NxpNfcRdLib-v07.18.00-rtt.1.zip",
+      "filename": "NXP_NfcRdLib-v07.18.00-rtt.1.zip"
+    },
+    {
+      "version": "latest",
+      "URL": "https://github.com/wdfk-prog/NXP_NfcRdLib.git",
+      "filename": "",
+      "VER_SHA": "rtt"
+    }
+  ]
+}

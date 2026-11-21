@@ -1,0 +1,512 @@
+# NXP NFC Reader Library v07.18.00 - RT-Thread package configuration.
+# Enabling a component selects its upstream source files; it does not
+# provide a board driver or establish functional compatibility.
+
+menuconfig PKG_USING_NXP_NFC
+    bool "NXP NFC Reader Library (licensed; RT-Thread port available for RC663 SPI)"
+    depends on RT_USING_DEVICE && RT_USING_HEAP
+    depends on RT_USING_EVENT && RT_USING_MUTEX && RT_USING_SEMAPHORE && RT_USING_TIMER_SOFT
+    default n
+    help
+      Build the NXP NFC Reader Library as an RT-Thread package.
+      The NXP licence must be reviewed before redistribution.
+      This package includes a portable RT-Thread RC663 SPI/OSAL/DAL backend.
+      The BSP must register its SPI slave and PIN devices and supply timing.
+
+if PKG_USING_NXP_NFC
+
+config PKG_NXP_NFC_PATH
+    string
+    default "/packages/peripherals/NXP_NfcRdLib"
+
+choice
+    prompt "NxpNfcRdLib version"
+    default PKG_USING_NXP_NFC_V071800
+    help
+      Select the Reader Library version for RT-Thread package metadata.
+      The bundled NxpNfcRdLib/ source is v07.18.00. For an offline/local
+      BSP, selecting latest does not replace the source tree. Online
+      downloading is controlled by the RT-Thread package index.
+
+config PKG_USING_NXP_NFC_V071800
+    bool "v07.18.00"
+
+config PKG_USING_NXP_NFC_LATEST_VERSION
+    bool "latest (RT-Thread rtt branch)"
+
+endchoice
+
+config PKG_NXP_NFC_VER
+    string
+    default "v07.18.00" if PKG_USING_NXP_NFC_V071800
+    default "latest" if PKG_USING_NXP_NFC_LATEST_VERSION
+
+config NXP_NFC_BUNDLED_LIB_VERSION
+    string
+    default "v07.18.00"
+    help
+      The actual NXP Reader Library revision bundled in NxpNfcRdLib/.
+      This does not change when the package-index latest option is selected.
+
+config NXP_NFC_CONFIG_FROM_KCONFIG
+    bool
+    default y
+
+config NXP_NFC_PORT_READY
+    bool "Enable RC663 SPI port after BSP wiring has been configured"
+    depends on NXPBUILD__PHHAL_HW_RC663 && NXP_NFC_BUS_SPI
+    depends on RT_USING_SPI && RT_USING_PIN
+    default n
+    help
+      The package now provides RT-Thread OSAL, RC663 SPI BAL and PIN/IRQ DAL.
+      Before enabling, configure the device and pins below and ensure the BSP
+      has registered the SPI slave device and its PIN driver. This option
+      does not imply hardware validation.
+
+if NXPBUILD__PHHAL_HW_RC663 && NXP_NFC_BUS_SPI
+
+config NXP_NFC_SPI_DEVICE_NAME
+    string "RT-Thread SPI slave device name (already registered by BSP)"
+    default ""
+    help
+      Name of an existing RT_Device_Class_SPIDevice, for example spi20.
+      The package does not create or attach a device to an SPI bus.
+
+config NXP_NFC_SPI_MAX_HZ
+    int "SPI clock frequency (Hz)"
+    range 100000 6000000
+    default 4000000
+
+config PHDRIVER_PIN_SSEL
+    int "RT-Thread PIN index for RC663 NSS (software chip-select)"
+    default -1
+
+config PHDRIVER_PIN_RESET
+    int "RT-Thread PIN index for RC663 PDOWN (active high)"
+    default -1
+
+config PHDRIVER_PIN_IRQ
+    int "RT-Thread PIN index for RC663 IRQ"
+    default -1
+
+# Fixed NXP HAL board constants, emitted by Kconfig in rtconfig.h.
+# The enums PH_DRIVER_PULL_{DOWN,UP} have values 0 and 1, respectively.
+config PH_DRIVER_SET_HIGH
+    int
+    default 1
+
+config PH_DRIVER_SET_LOW
+    int
+    default 0
+
+config RESET_POWERUP_LEVEL
+    int
+    default 0
+
+config RESET_POWERDOWN_LEVEL
+    int
+    default 1
+
+config PHDRIVER_PIN_RESET_PULL_CFG
+    int
+    default 0
+
+config PHDRIVER_PIN_IRQ_PULL_CFG
+    int
+    default 1
+
+config PHDRIVER_PIN_NSS_PULL_CFG
+    int
+    default 1
+
+choice
+    prompt "RC663 IRQ trigger type"
+    default NXP_NFC_IRQ_FALLINGEDGE
+
+config NXP_NFC_IRQ_RISINGEDGE
+    bool "Rising edge"
+
+config NXP_NFC_IRQ_FALLINGEDGE
+    bool "Falling edge"
+
+endchoice
+
+# Kconfig is the single source of these RT-Thread build settings.
+config NXPBUILD_CUSTOMER_HEADER_INCLUDED
+    bool
+    default y
+
+config PH_OSAL_RTTHREAD
+    bool
+    default y
+
+config NXP_NFC_THREAD_SLICE
+    int "OSAL thread time slice (RT-Thread ticks)"
+    range 1 100
+    default 10
+
+endif
+
+choice
+    prompt "Reader frontend (select one)"
+    default NXPBUILD__PHHAL_HW_RC663
+
+config NXPBUILD__PHHAL_HW_RC663
+    bool "RC663 / RC663 Plus"
+
+config NXPBUILD__PHHAL_HW_PN5180
+    bool "PN5180 (port not validated)"
+
+config NXPBUILD__PHHAL_HW_PN5190
+    bool "PN5190 (port not validated)"
+
+config NXPBUILD__PHHAL_HW_PN7462AU
+    bool "PN7462AU integrated controller (dedicated platform required)"
+
+endchoice
+
+choice
+    prompt "Host communication interface"
+    default NXP_NFC_BUS_SPI
+    depends on !NXPBUILD__PHHAL_HW_PN7462AU
+
+config NXP_NFC_BUS_SPI
+    bool "SPI"
+
+config NXP_NFC_BUS_I2C
+    bool "I2C (RT-Thread BAL backend not implemented)"
+    depends on NXPBUILD__PHHAL_HW_RC663
+
+config NXP_NFC_BUS_UART
+    bool "UART / RS232 (RT-Thread BAL backend not implemented)"
+    depends on NXPBUILD__PHHAL_HW_RC663
+
+endchoice
+
+menu "Optional RT-Thread port runtime checks"
+
+config NXP_NFC_CHECK_ALL
+    bool "Enable optional defensive checks (master switch)"
+    default y
+    help
+      Defaults to all checks enabled. Disabling assumes the application
+      passes correct pointers, counts and configuration and never violates
+      the single-reader resource contract. Mandatory error handling,
+      transaction cleanup and IRQ lifetime protection remain enabled.
+
+config NXP_NFC_CHECK_PARAM
+    bool "Check API inputs (pointers, counts, ranges)"
+    depends on NXP_NFC_CHECK_ALL
+    default y
+
+config NXP_NFC_CHECK_CONFIG
+    bool "Check optional pin, mode and option validity"
+    depends on NXP_NFC_CHECK_ALL
+    default y
+
+config NXP_NFC_CHECK_RESOURCE
+    bool "Check optional single-reader resource conflicts"
+    depends on NXP_NFC_CHECK_ALL
+    default y
+
+config NXP_NFC_CHECK_DEVICE
+    bool "Check optional BSP device availability and type"
+    depends on NXP_NFC_CHECK_ALL
+    default y
+
+endmenu
+
+menu "PAL - protocol abstraction layers"
+
+config NXPBUILD__PHPAL_I14443P3A_SW
+    bool "ISO/IEC 14443-3A (Type A)"
+    default n
+
+config NXPBUILD__PHPAL_I14443P3B_SW
+    bool "ISO/IEC 14443-3B (Type B)"
+    default n
+
+config NXPBUILD__PHPAL_I14443P4A_SW
+    bool "ISO/IEC 14443-4A"
+    depends on NXPBUILD__PHPAL_I14443P3A_SW
+    default n
+
+config NXPBUILD__PHPAL_I14443P4_SW
+    bool "ISO/IEC 14443-4"
+    depends on NXPBUILD__PHPAL_I14443P4A_SW || NXPBUILD__PHPAL_I14443P3B_SW
+    default n
+
+config NXPBUILD__PHPAL_I14443P4MC_SW
+    bool "ISO/IEC 14443-4 card mode (frontend support required)"
+    depends on !NXPBUILD__PHHAL_HW_RC663
+    default n
+
+config NXPBUILD__PHPAL_MIFARE_SW
+    bool "MIFARE protocol"
+    depends on NXPBUILD__PHPAL_I14443P3A_SW
+    default n
+
+config NXPBUILD__PHPAL_FELICA_SW
+    bool "FeliCa"
+    default n
+
+config NXPBUILD__PHPAL_SLI15693_SW
+    bool "ISO/IEC 15693 / NFC-V"
+    default n
+
+config NXPBUILD__PHPAL_EPCUID_SW
+    bool "EPC/UID"
+    depends on NXPBUILD__PHHAL_HW_RC663
+    default n
+
+config NXPBUILD__PHPAL_I18000P3M3_SW
+    bool "ISO/IEC 18000-3 Mode 3"
+    default n
+
+config NXPBUILD__PHPAL_I18092MPI_SW
+    bool "ISO/IEC 18092 initiator"
+    depends on NXPBUILD__PHPAL_I14443P3A_SW || NXPBUILD__PHPAL_FELICA_SW
+    default n
+
+config NXPBUILD__PHPAL_I18092MT_SW
+    bool "ISO/IEC 18092 target"
+    depends on !NXPBUILD__PHHAL_HW_RC663
+    default n
+
+endmenu
+
+menu "Security and key storage"
+
+config NXPBUILD__PH_KEYSTORE_SW
+    bool "Software KeyStore"
+    default n
+
+config NXPBUILD__PH_KEYSTORE_RC663
+    bool "RC663 KeyStore"
+    depends on NXPBUILD__PHHAL_HW_RC663
+    default n
+
+config NXPBUILD__PH_CRYPTOSYM_SW
+    bool "Software symmetric crypto"
+    default n
+
+config NXPBUILD__PH_CRYPTORNG_SW
+    bool "Software random generator"
+    default n
+
+config NXP_NFC_EXTERNAL_MBEDTLS
+    bool "Allow external mbedTLS backend (not bundled)"
+    default n
+    help
+      The upstream CryptoLib/mbedtls directory was removed. Enable
+      only after installing an API-compatible mbedTLS library in BSP.
+
+config NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    bool "mbedTLS symmetric crypto"
+    depends on NXP_NFC_EXTERNAL_MBEDTLS
+    default n
+
+config NXPBUILD__PH_CRYPTORNG_MBEDTLS
+    bool "mbedTLS random generator"
+    depends on NXP_NFC_EXTERNAL_MBEDTLS
+    default n
+
+config NXPBUILD__PH_CRYPTOASYM_MBEDTLS
+    bool "mbedTLS asymmetric crypto, ECC and hashes"
+    depends on NXP_NFC_EXTERNAL_MBEDTLS
+    default n
+
+endmenu
+
+menu "AL - application layers"
+
+config NXPBUILD__PHAL_FELICA_SW
+    bool "FeliCa AL"
+    depends on NXPBUILD__PHPAL_FELICA_SW
+    default n
+
+config NXPBUILD__PHAL_I18000P3M3_SW
+    bool "ISO/IEC 18000-3 Mode 3 AL"
+    depends on NXPBUILD__PHPAL_I18000P3M3_SW
+    default n
+
+config NXPBUILD__PHAL_ICODE_SW
+    bool "ICODE AL"
+    depends on NXPBUILD__PHPAL_SLI15693_SW
+    default n
+
+config NXPBUILD__PHAL_MFC_SW
+    bool "MIFARE Classic"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_KEYSTORE_SW || NXPBUILD__PH_KEYSTORE_RC663
+    default n
+
+config NXPBUILD__PHAL_MFUL_SW
+    bool "MIFARE Ultralight"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    default n
+
+config NXPBUILD__PHAL_MFP_SW
+    bool "MIFARE Plus"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOSYM_SW || NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_MFPEVX_SW
+    bool "MIFARE Plus EVx"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOSYM_SW || NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_MFDF_SW
+    bool "MIFARE DESFire"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOSYM_SW || NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_MFDFEVX_SW
+    bool "MIFARE DESFire EVx"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOSYM_SW || NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_MFDFLIGHT_SW
+    bool "MIFARE DESFire Light"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOSYM_SW || NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_MFNTAG42XDNA_SW
+    bool "MIFARE NTAG 42X DNA"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOASYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_MFDUOX_SW
+    bool "MIFARE DUOX"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOASYM_MBEDTLS && NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_NTAGXDNA_SW
+    bool "NTAG X DNA"
+    depends on NXPBUILD__PHPAL_MIFARE_SW
+    depends on NXPBUILD__PH_CRYPTOASYM_MBEDTLS && NXPBUILD__PH_CRYPTOSYM_MBEDTLS
+    default n
+
+config NXPBUILD__PHAL_T1T_SW
+    bool "Type 1 Tag"
+    depends on NXPBUILD__PHPAL_I14443P3A_SW
+    default n
+
+config NXPBUILD__PHAL_VCA_SW
+    bool "Virtual Card Architecture"
+    default n
+
+config NXPBUILD__PHAL_TOP_SW
+    bool "Tag operations / NDEF mapping"
+    default n
+
+if NXPBUILD__PHAL_TOP_SW
+
+config NXPBUILD__PHAL_TOP_T1T_SW
+    bool "Type 1 Tag operations"
+    depends on NXPBUILD__PHAL_T1T_SW
+    default n
+
+config NXPBUILD__PHAL_TOP_T2T_SW
+    bool "Type 2 Tag operations"
+    depends on NXPBUILD__PHAL_MFUL_SW
+    default n
+
+config NXPBUILD__PHAL_TOP_T3T_SW
+    bool "Type 3 Tag operations"
+    depends on NXPBUILD__PHAL_FELICA_SW
+    default n
+
+config NXPBUILD__PHAL_TOP_T4T_SW
+    bool "Type 4 Tag operations"
+    depends on NXPBUILD__PHPAL_I14443P4_SW
+    default n
+
+config NXPBUILD__PHAL_TOP_T5T_SW
+    bool "Type 5 Tag operations"
+    depends on NXPBUILD__PHAL_ICODE_SW
+    default n
+
+config NXPBUILD__PHAL_TOP_MFC_SW
+    bool "MIFARE Classic Tag operations"
+    depends on NXPBUILD__PHAL_MFC_SW
+    default n
+
+endif
+endmenu
+
+menu "Additional library modules"
+
+config NXPBUILD__PHAC_DISCLOOP_SW
+    bool "Discovery Loop"
+    depends on NXPBUILD__PHPAL_I14443P3A_SW || NXPBUILD__PHPAL_I14443P3B_SW || NXPBUILD__PHPAL_FELICA_SW || NXPBUILD__PHPAL_SLI15693_SW || NXPBUILD__PHPAL_I18000P3M3_SW
+    default n
+
+config NXPBUILD__PHAC_DISCLOOP_LPCD
+    bool "Discovery Loop low-power card detection"
+    depends on NXPBUILD__PHAC_DISCLOOP_SW
+    depends on NXPBUILD__PHHAL_HW_RC663 || NXPBUILD__PHHAL_HW_PN5180 || NXPBUILD__PHHAL_HW_PN5190 || NXPBUILD__PHHAL_HW_PN7462AU
+    default n
+
+config NXPBUILD__PHNFCLIB
+    bool "Simplified NFC Library API"
+    depends on NXPBUILD__PHAC_DISCLOOP_SW
+    default n
+
+config NXPBUILD__PH_NFCLIB_ISO
+    bool "Simplified API ISO profile"
+    depends on NXPBUILD__PHNFCLIB
+    default n
+
+config NXPBUILD__PH_NFCLIB_EMVCO
+    bool "Simplified API EMVCo profile"
+    depends on NXPBUILD__PHNFCLIB
+    default n
+
+config NXPBUILD__PH_CIDMANAGER_SW
+    bool "CID Manager"
+    default n
+
+config NXPBUILD__PHCE_T4T_SW
+    bool "Type 4 Tag card emulation"
+    depends on NXPBUILD__PHPAL_I14443P4MC_SW
+    default n
+
+config NXPBUILD__PHLN_LLCP_SW
+    bool "LLCP"
+    depends on NXPBUILD__PHPAL_I18092MPI_SW || NXPBUILD__PHPAL_I18092MT_SW
+    default n
+
+config NXPBUILD__PHNP_SNEP_SW
+    bool "SNEP"
+    depends on NXPBUILD__PHLN_LLCP_SW
+    default n
+
+config NXPBUILD__PH_LOG
+    bool "NXP logging module"
+    default n
+
+endmenu
+
+menuconfig NXP_NFC_RT_DEVICE
+    bool "Register RC663 as an RT-Thread device"
+    depends on NXP_NFC_PORT_READY && RT_USING_DEVICE && RT_USING_MUTEX
+    depends on RT_USING_PIN && RT_USING_SPI
+    depends on RT_USING_EVENT && RT_USING_HEAP
+    default n
+    help
+      Register one rc663 device. This is the sole owner of the NXP HAL/BAL
+      instance and IRQ event for both MSH and the reader example.
+
+# Local BSP package: plain source paths are relative to the BSP project root.
+source "packages/NXP_NfcRdLib/msh/Kconfig"
+source "packages/NXP_NfcRdLib/examples/rc663/Kconfig"
+
+endif # PKG_USING_NXP_NFC
